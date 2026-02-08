@@ -1,0 +1,15 @@
+{
+  "input": "/Users/Abhishek/Documents/SBU/Fall 25/albatross-flight-visualization/detailed.csv",
+  "output_dir": "/Users/Abhishek/Documents/SBU/Fall 25/albatross-flight-visualization/analysis_outputs",
+  "k": 3,
+  "smooth_window": 15,
+  "random_state": 42,
+  "feature_columns": [
+    "feat_speed_mps_smooth",
+    "feat_turn_rate_radps_smooth",
+    "feat_vertical_rate_mps_smooth",
+    "feat_accel_mag_g_smooth",
+    "feat_accel_mag_g_std",
+    "feat_altitude"
+  ]
+}

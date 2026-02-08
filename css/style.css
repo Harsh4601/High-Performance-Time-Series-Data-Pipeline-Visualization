@@ -1,0 +1,1689 @@
+body {
+    margin: 0;
+    overflow: auto;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+}
+
+/* Welcome Screen Styles */
+.welcome-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    z-index: 20000;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.welcome-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.welcome-content {
+    text-align: center;
+    color: white;
+    max-width: 600px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.welcome-content h1 {
+    font-size: 48px;
+    margin: 0 0 20px 0;
+    font-weight: 700;
+    letter-spacing: -1px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.welcome-content p {
+    font-size: 18px;
+    margin: 0 0 40px 0;
+    opacity: 0.95;
+    line-height: 1.6;
+}
+
+.upload-area {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+}
+
+.upload-area.drag-over {
+    background: #f0f8ff;
+    border: 2px dashed #2563eb;
+}
+
+.file-input-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.file-input-wrapper input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.upload-btn {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    border: none;
+    padding: 18px 40px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.upload-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+}
+
+.upload-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+.file-info {
+    margin-top: 20px;
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 25000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.processing-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.processing-content {
+    text-align: center;
+    color: white;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.processing-content p {
+    font-size: 20px;
+    margin: 10px 0;
+}
+
+.processing-content .progress-text {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* Map tooltip styling */
+.map-tooltip {
+    background: rgba(0, 0, 0, 0.92) !important;
+    color: white !important;
+    border: 1px solid #34c759 !important;
+    border-radius: 6px !important;
+    padding: 8px 10px !important;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+    max-width: 220px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(3px) !important;
+}
+
+.map-tooltip::before {
+    border-top-color: #34c759 !important;
+}
+
+.main-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas: 
+        "visualization map"
+        "magnetometer accelerometer";
+    height: 100vh;
+    width: 100%;
+    gap: 20px;
+    padding: 20px;
+    box-sizing: border-box;
+    background: transparent;
+    transition: opacity 0.5s ease;
+    animation: fadeInScale 0.6s ease-out forwards;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.main-container.hidden {
+    display: none;
+}
+
+.section-3d {
+    grid-area: visualization;
+    position: relative;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        0 8px 32px rgba(0, 0, 0, 0.25),
+        inset 0 1px 2px rgba(255, 255, 255, 1);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section-map {
+    grid-area: map;
+    position: relative;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 10px 15px 15px 15px;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        0 8px 32px rgba(0, 0, 0, 0.25),
+        inset 0 1px 2px rgba(255, 255, 255, 1);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.section-map h3 {
+    margin: 0 0 4px 0;
+    text-align: center;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    position: relative;
+    padding-bottom: 6px;
+}
+
+.section-map h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 2px;
+    background: linear-gradient(90deg, #2563eb, #1e40af);
+    border-radius: 2px;
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.4);
+}
+
+#map {
+    width: 100%;
+    height: calc(100% - 40px);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.graph-section {
+    position: relative;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        0 8px 32px rgba(0, 0, 0, 0.25),
+        inset 0 1px 2px rgba(255, 255, 255, 1);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.graph-section:nth-child(3) {
+    grid-area: magnetometer;
+}
+
+.graph-section:nth-child(4) {
+    grid-area: accelerometer;
+}
+
+.graph-section h3 {
+    margin: 0 0 16px 0;
+    text-align: center;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.graph-section h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb, #1e40af);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+.graph-section canvas {
+    width: 100% !important;
+    height: calc(100% - 60px) !important;
+    border-radius: 10px;
+}
+
+#info {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+#container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #333333;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: none;
+}
+
+/* Add styles for path navigation controls */
+.path-navigation {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    padding: 18px;
+    border-radius: 16px;
+    color: #2c3e50;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.segment-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 200px;
+}
+
+.segment-button {
+    width: 32px;
+    height: 32px;
+    margin: 4px;
+    background: rgba(37, 99, 235, 0.9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.segment-button:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.segment-button.active {
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    box-shadow: 0 4px 15px rgba(30, 64, 175, 0.5);
+}
+
+/* Path Navigation Buttons */
+.path-navigation button {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.path-navigation button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);
+}
+
+.path-navigation button#resetTimeSelection {
+    background: linear-gradient(135deg, #FF6B6B, #EE5A52);
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.path-navigation button#resetTimeSelection:hover {
+    background: linear-gradient(135deg, #EE5A52, #FF6B6B);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.5);
+}
+
+.path-navigation h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Tooltip styles */
+#tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 100;
+    max-width: 200px;
+    min-width: 150px;
+    line-height: 1.3;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#tooltip table {
+    margin: 0;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#tooltip th {
+    text-align: right;
+    padding-right: 6px;
+    color: #cccccc;
+    font-size: 11px;
+    font-weight: normal;
+    white-space: nowrap;
+}
+
+#tooltip td {
+    text-align: left;
+    padding-left: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Legend Toggle Button - positioned within the 3D section */
+.section-3d .legend-toggle-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2563eb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08);
+    z-index: 1001;
+}
+
+.section-3d .legend-toggle-btn:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 25px rgba(37, 99, 235, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Color Legend styles - positioned within the 3D section */
+.section-3d .color-legend {
+    position: absolute;
+    top: 65px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    padding: 20px;
+    border-radius: 16px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13px;
+    color: #2c3e50;
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.15),
+        0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    max-width: calc(100% - 40px);
+    max-height: calc(100% - 85px);
+    overflow-y: auto;
+    transition: all 0.3s ease;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.section-3d .color-legend.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-100%);
+}
+
+/* Adjust legend content for smaller space */
+.section-3d .color-legend h4 {
+    margin: 0 0 16px 0;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: center;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.section-3d .color-legend h4::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb, #1e40af);
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+}
+
+.section-3d .parameter-selector {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.section-3d .parameter-selector h5 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #34495e;
+    text-align: center;
+}
+
+.section-3d .parameter-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(37, 99, 235, 0.3);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.8);
+    color: #2563eb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    min-width: 55px;
+    text-align: center;
+}
+
+.section-3d .parameter-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    border-color: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.section-3d .parameter-btn.active {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+}
+
+.section-3d .parameter-btn.active:hover {
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+}
+
+.section-3d .legend-item {
+    display: flex;
+    align-items: center;
+    margin: 6px 0;
+}
+
+.section-3d .legend-color {
+    width: 25px;
+    height: 16px;
+    margin-right: 8px;
+    border: 1px solid #666;
+    border-radius: 3px;
+    position: relative;
+}
+
+.section-3d .legend-text {
+    font-size: 11px;
+    color: #34495e;
+    font-weight: 500;
+}
+
+.section-3d .legend-text strong {
+    font-size: 12px;
+}
+
+.color-legend h4 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    color: #2c3e50;
+    letter-spacing: -0.5px;
+    position: relative;
+}
+
+.color-legend h4::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, #9b59b6, #3498db);
+    border-radius: 1px;
+}
+
+/* Parameter Selection Controls */
+.parameter-selector {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.parameter-selector h5 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #34495e;
+    text-align: center;
+}
+
+.parameter-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.parameter-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(37, 99, 235, 0.3);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #2563eb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    min-width: 70px;
+    text-align: center;
+}
+
+.parameter-btn:hover {
+    border-color: #2563eb;
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.parameter-btn.active {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+}
+
+.parameter-btn.active:hover {
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.legend-color {
+    width: 30px;
+    height: 20px;
+    margin-right: 10px;
+    border: 1px solid #666;
+    border-radius: 3px;
+    position: relative;
+}
+
+.legend-color.altitude-low {
+    background: linear-gradient(90deg, #0066CC 0%, #0066CC 50%, #004499 50%, #004499 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.altitude-medium-low {
+    background: linear-gradient(90deg, #00AA66 0%, #00AA66 50%, #008844 50%, #008844 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.altitude-medium {
+    background: linear-gradient(90deg, #FFAA00 0%, #FFAA00 50%, #DD8800 50%, #DD8800 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.altitude-medium-high {
+    background: linear-gradient(90deg, #FF6600 0%, #FF6600 50%, #DD4400 50%, #DD4400 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.altitude-high {
+    background: linear-gradient(90deg, #CC0033 0%, #CC0033 50%, #990022 50%, #990022 100%);
+    background-size: 8px 100%;
+}
+
+/* Pressure-based color schemes */
+.legend-color.pressure-low {
+    background: linear-gradient(90deg, #8e44ad 0%, #8e44ad 50%, #6c3483 50%, #6c3483 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.pressure-medium-low {
+    background: linear-gradient(90deg, #3498db 0%, #3498db 50%, #2874a6 50%, #2874a6 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.pressure-medium {
+    background: linear-gradient(90deg, #17a2b8 0%, #17a2b8 50%, #138496 50%, #138496 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.pressure-medium-high {
+    background: linear-gradient(90deg, #20c997 0%, #20c997 50%, #1a9970 50%, #1a9970 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.pressure-high {
+    background: linear-gradient(90deg, #28a745 0%, #28a745 50%, #1e7e34 50%, #1e7e34 100%);
+    background-size: 8px 100%;
+}
+
+/* Temperature-based color schemes */
+.legend-color.temperature-low {
+    background: linear-gradient(90deg, #0066ff 0%, #0066ff 50%, #0044cc 50%, #0044cc 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.temperature-medium-low {
+    background: linear-gradient(90deg, #00ccff 0%, #00ccff 50%, #0099cc 50%, #0099cc 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.temperature-medium {
+    background: linear-gradient(90deg, #ffcc00 0%, #ffcc00 50%, #cc9900 50%, #cc9900 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.temperature-medium-high {
+    background: linear-gradient(90deg, #ff6600 0%, #ff6600 50%, #cc4400 50%, #cc4400 100%);
+    background-size: 8px 100%;
+}
+
+.legend-color.temperature-high {
+    background: linear-gradient(90deg, #ff0000 0%, #ff0000 50%, #cc0000 50%, #cc0000 100%);
+    background-size: 8px 100%;
+}
+
+/* Behavior state legend colors (Option B) */
+/* Behavior state colors - matched to semantic meaning */
+.legend-color.state-0 { background: #3498db; } /* Climb - sky blue */
+.legend-color.state-1 { background: #e74c3c; } /* Descent - red */
+.legend-color.state-2 { background: #f39c12; } /* Turning - orange */
+.legend-color.state-3 { background: #27ae60; } /* Transit - green */
+.legend-color.state-4 { background: #95a5a6; } /* Low-motion - gray */
+
+.legend-text {
+    font-size: 13px;
+    color: #34495e;
+    font-weight: 500;
+}
+
+/* Map Color Toggle Buttons */
+.map-color-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.map-color-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #555;
+}
+
+.map-color-btn:hover {
+    border-color: #2563eb;
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-1px);
+}
+
+.map-color-btn.active {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Map Legend */
+.map-legend {
+    position: absolute;
+    bottom: 20px;
+    left: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-width: 140px;
+    backdrop-filter: blur(5px);
+}
+
+.map-legend-title {
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 6px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+}
+
+.map-legend-item {
+    display: flex;
+    align-items: center;
+    margin: 4px 0;
+}
+
+.map-legend-color {
+    width: 16px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.map-legend-label {
+    color: #444;
+    font-size: 9px;
+    line-height: 1.2;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .main-container {
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .section-3d, .section-map, .graph-section {
+        border-radius: 8px;
+    }
+    
+    .path-navigation, .color-legend {
+        padding: 12px;
+        border-radius: 8px;
+    }
+    
+    .maximize-btn {
+        width: 28px;
+        height: 28px;
+        top: 8px;
+        right: 8px;
+    }
+    
+    .maximize-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr 1fr 1fr;
+        grid-template-areas: 
+            "visualization"
+            "map"
+            "magnetometer"
+            "accelerometer";
+        gap: 6px;
+        padding: 6px;
+    }
+    
+    .global-reset-btn {
+        bottom: 15px;
+        right: 15px;
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+    
+    .global-reset-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .path-navigation {
+        top: 10px;
+        right: 10px;
+        padding: 8px;
+        font-size: 12px;
+    }
+    
+    .section-3d .legend-toggle-btn {
+        top: 10px;
+        left: 10px;
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+    
+    .section-3d .color-legend {
+        top: 50px;
+        left: 10px;
+        padding: 12px;
+        max-width: calc(100% - 20px);
+        max-height: calc(100% - 60px);
+    }
+    
+    .section-3d .parameter-btn {
+        padding: 3px 8px;
+        font-size: 9px;
+        min-width: 45px;
+    }
+    
+    .section-3d .legend-color {
+        width: 20px;
+        height: 14px;
+        margin-right: 6px;
+    }
+    
+    .section-3d .legend-text {
+        font-size: 10px;
+    }
+    
+    .section-3d .legend-text strong {
+        font-size: 11px;
+    }
+    
+    .section-map h3, .graph-section h3, .color-legend h4 {
+        font-size: 16px;
+    }
+    
+    #info {
+        font-size: 16px;
+    }
+    
+    .maximize-btn {
+        width: 24px;
+        height: 24px;
+        top: 6px;
+        right: 6px;
+    }
+    
+    .maximize-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+    
+    /* Fullscreen adjustments for mobile */
+    .section-fullscreen .path-navigation {
+        top: 50px;
+        right: 10px;
+        padding: 6px;
+        font-size: 11px;
+    }
+    
+    .section-fullscreen .legend-toggle-btn {
+        top: 50px;
+        left: 10px;
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+    
+    .section-fullscreen .color-legend {
+        top: 80px;
+        left: 10px;
+        max-height: calc(100vh - 90px);
+    }
+}
+
+/* Maximize Button Styles */
+.maximize-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+    transition: all 0.3s ease;
+    z-index: 1002;
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.maximize-btn:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+        0 8px 25px rgba(37, 99, 235, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.maximize-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Fullscreen Mode Styles */
+.section-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 10000 !important;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    grid-area: unset !important;
+    overflow: auto !important;
+}
+
+/* Hide other sections when one is fullscreen */
+.main-container.has-fullscreen > :not(.section-fullscreen) {
+    display: none !important;
+}
+
+/* Fullscreen maximize button changes to minimize */
+.section-fullscreen .maximize-btn svg {
+    transform: rotate(180deg);
+}
+
+/* Fullscreen content adjustments */
+.section-fullscreen #container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.section-fullscreen #map {
+    width: 100% !important;
+    height: calc(100% - 80px) !important;
+}
+
+.section-fullscreen canvas {
+    width: 100% !important;
+    height: calc(100% - 120px) !important;
+}
+
+/* Fullscreen section should remove padding */
+.section-fullscreen.section-map,
+.section-fullscreen.graph-section {
+    padding: 60px 20px 20px 20px !important;
+}
+
+/* Fullscreen maximize button positioning */
+.section-fullscreen .maximize-btn {
+    top: 20px !important;
+    right: 20px !important;
+}
+
+/* Adjust controls positioning in fullscreen 3D view */
+.section-fullscreen .path-navigation {
+    top: 60px;
+    right: 20px;
+}
+
+.section-fullscreen .legend-toggle-btn {
+    top: 60px;
+    left: 20px;
+}
+
+.section-fullscreen .color-legend {
+    top: 100px;
+    left: 20px;
+    max-height: calc(100vh - 120px);
+}
+
+/* Ensure maximize button doesn't interfere with existing controls */
+.section-3d .maximize-btn {
+    top: 20px;
+    right: 20px;
+}
+
+/* Adjust maximize button positioning for sections with padding */
+.section-map .maximize-btn {
+    top: 26px;
+    right: 26px;
+}
+
+/* Adjust maximize button positioning for graph sections */
+.graph-section .maximize-btn {
+    top: 26px;
+    right: 26px;
+}
+
+.zoom-out-btn {
+    position: absolute;
+    top: 10px;
+    right: 52px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+    transition: all 0.3s ease;
+    z-index: 1002;
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.zoom-out-btn:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+        0 8px 25px rgba(37, 99, 235, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.zoom-out-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.graph-section .zoom-out-btn {
+    top: 26px;
+    right: 68px;
+}
+
+.section-fullscreen .zoom-out-btn {
+    top: 20px !important;
+    right: 72px !important;
+}
+
+/* Parameter selection positioned at top left */
+.parameter-selector-top {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.parameter-selector-top label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2563eb;
+    white-space: nowrap;
+}
+
+.parameter-selector-top select {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(37, 99, 235, 0.3);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2563eb;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    min-width: 130px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.parameter-selector-top select:hover {
+    border-color: #2563eb;
+    background: white;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.parameter-selector-top select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Old parameter selection styles (kept for compatibility) */
+.graph-section select {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(37, 99, 235, 0.3);
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2563eb;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    min-width: 150px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.graph-section select:hover {
+    border-color: #2563eb;
+    background: white;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.graph-section select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.graph-section label {
+    font-weight: 600;
+    color: #2563eb;
+}
+
+/* Global Reset Button */
+.global-reset-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 15000;
+    background: linear-gradient(135deg, #FF6B6B, #EE5A52);
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 50px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 
+        0 8px 25px rgba(255, 107, 107, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.global-reset-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 35px rgba(255, 107, 107, 0.6),
+        0 6px 15px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #EE5A52, #FF6B6B);
+}
+
+.global-reset-btn:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+.global-reset-btn.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.global-reset-btn svg {
+    animation: rotateIcon 2s ease-in-out infinite;
+}
+
+@keyframes rotateIcon {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(15deg); }
+}
+
+.global-reset-btn:hover svg {
+    animation: none;
+    transform: rotate(-360deg);
+    transition: transform 0.6s ease;
+}
+
+/* Animations removed to prevent loading appearance during interactions */
+
+/* ============================================================================
+   TRAJECTORY METRICS PANEL
+   ============================================================================ */
+
+.metrics-toggle-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 15000;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    transition: all 0.3s ease;
+}
+
+.metrics-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+}
+
+.metrics-toggle-btn.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.metrics-panel {
+    position: fixed;
+    bottom: 80px;
+    left: 30px;
+    width: 340px;
+    max-height: 70vh;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    z-index: 15000;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(20px);
+}
+
+.metrics-panel.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+.metrics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+}
+
+.metrics-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.metrics-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.metrics-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.metrics-content {
+    padding: 16px;
+    max-height: calc(70vh - 60px);
+    overflow-y: auto;
+}
+
+.metrics-loading {
+    text-align: center;
+    padding: 30px;
+    color: #888;
+    font-size: 13px;
+}
+
+/* Metric Cards */
+.metric-card {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.metric-card:last-child {
+    margin-bottom: 0;
+}
+
+.metric-card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.metric-card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.metric-card-subtitle {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* Metric with icon */
+.metric-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.metric-row:last-child {
+    margin-bottom: 0;
+}
+
+.metric-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.metric-icon.distance { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.metric-icon.displacement { background: linear-gradient(135deg, #10b981, #059669); }
+.metric-icon.tortuosity { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.metric-icon.turns { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.metric-icon.loops { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.metric-icon.speed { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.metric-icon.duration { background: linear-gradient(135deg, #ec4899, #db2777); }
+
+.metric-info {
+    flex: 1;
+}
+
+.metric-label {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+
+.metric-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.metric-unit {
+    font-size: 12px;
+    font-weight: 400;
+    color: #94a3b8;
+    margin-left: 2px;
+}
+
+/* Top Turns List */
+.top-turns-list {
+    margin-top: 8px;
+}
+
+.turn-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.turn-item:last-child {
+    margin-bottom: 0;
+}
+
+.turn-rank {
+    font-weight: 700;
+    color: #6366f1;
+    width: 20px;
+}
+
+.turn-angle {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.turn-location {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+/* Loops summary */
+.loops-summary {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.loop-stat {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.loop-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #8b5cf6;
+}
+
+.loop-stat-label {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* Tortuosity gauge */
+.tortuosity-gauge {
+    margin-top: 10px;
+    background: #e2e8f0;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.tortuosity-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.tortuosity-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+/* Section divider */
+.metrics-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    margin: 16px 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+}

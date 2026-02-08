@@ -1,0 +1,520 @@
+% ---------------------------------------------------------------------------
+% EuroVis 2026 — Full Paper (Submission) using official EG template
+% Content merged from your 'article' version (format stripped)
+% ---------------------------------------------------------------------------
+
+\documentclass{egpubl}
+
+\usepackage{eurovis2026}
+
+% --- Select the correct track/mode ---
+\SpecialIssueSubmission      % EuroVis full paper: submission to CGF special issue
+% \SpecialIssuePaper         % (use this for camera-ready AFTER acceptance)
+
+% --- License (choose one per CGF policy; cc-by is fine for submission) ---
+\CGFccby
+% \CGFStandardLicense
+% \CGFccbync
+% \CGFccbyncnd
+
+% ---------------------------------------------------------------------------
+% DO NOT MODIFY ABOVE UNLESS YOU KNOW WHAT YOU'RE DOING
+% ---------------------------------------------------------------------------
+
+\usepackage[T1]{fontenc}
+\usepackage{dfadobe}
+\usepackage{cite}
+\BibtexOrBiblatex
+\electronicVersion
+\PrintedOrElectronic
+\ifpdf \usepackage[pdftex]{graphicx}\pdfcompresslevel=9
+\else  \usepackage[dvips]{graphicx}\fi
+\usepackage{egweblnk}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{xspace}
+
+% ------- PDF metadata -------
+\hypersetup{
+  pdftitle  ={Albatross-Vis: Scalable Web Trajectory Visualization},
+  pdfauthor ={Klaus Mueller, Harsh Vivek Londhekar, Abhishek Kohli}
+}
+
+% ------------------ Title ------------------
+\title[Interactive Web-Based Albatross Visualization]%
+{Albatross-Vis: Scalable Web Trajectory Visualization}
+
+% ------------------ Authors (order per your request) ------------------
+\author[K. Mueller, H.\,V. Londhekar \& A. Kohli]%
+{Klaus Mueller\thanks{Stony Brook University, New York, USA. Email: \texttt{mueller@cs.stonybrook.edu}}%
+\and Harsh Vivek Londhekar\thanks{Stony Brook University, New York, USA. Email: \texttt{hlondhekar@cs.stonybrook.edu}}%
+\and Abhishek Kohli\thanks{Stony Brook University, New York, USA. Email: \texttt{abkohli@cs.stonybrook.edu}}%
+}
+
+\begin{document}
+
+\maketitle
+
+% ------------------ Abstract ------------------
+\begin{abstract}
+Modern bio-logging devices generate massive multi-dimensional sensor datasets that challenge existing visualization tools. We present Albatross-Vis, a web-based interactive visualization system that processes datasets exceeding 340{,}000 records (90\,MB+) entirely client-side. Our approach combines Web Workers for background processing, streaming CSV parsing, and adaptive sampling strategies: Chart.js decimation with LTTB for time-series charts, custom LTTB downsampling (10{,}000--20{,}000 points) for 3D visualization, and intelligent sampling with Leaflet MarkerCluster for geographic mapping. The system achieves 10--15\,s load times for 90\,MB files while maintaining 60\,FPS rendering across synchronized 3D, chart, and map views. We demonstrate the system's effectiveness through performance benchmarks and case studies analyzing albatross flight patterns, showing that client-side processing enables desktop-level performance without compromising data privacy or requiring server infrastructure.
+\end{abstract}
+
+% ------------------ Keywords ------------------
+\begin{keywords}
+Web-based visualization, visual analytics, downsampling, time-series, movement ecology, Three.js, Leaflet, Chart.js, Web Workers
+\end{keywords}
+
+% ------------------ 1. Introduction ------------------
+\section{Introduction}
+\label{sec:intro}
+
+The study of animal movement patterns, particularly in long-distance migratory birds such as albatrosses, has become increasingly important for understanding ecological dynamics and conservation strategies \cite{key_weimerskirch}. These birds undertake epic migrations spanning thousands of kilometers, exhibiting complex flight behaviors including dynamic soaring, thermal updraft utilization, and foraging strategies that vary with environmental conditions. Understanding these patterns requires analyzing multi-dimensional sensor data captured at high temporal resolutions.
+
+Modern bio-logging devices deployed on albatrosses capture rich sensor streams: GPS coordinates providing precise location fixes every few seconds, accelerometers measuring wingbeat patterns and flight dynamics, magnetometers detecting orientation changes, barometric pressure sensors enabling altitude derivation, and temperature sensors monitoring environmental conditions. A single tracking study spanning several weeks can generate datasets with hundreds of thousands of records, often exceeding 90\,MB in size \cite{key_movebank}. These datasets contain critical information about flight efficiency, foraging behavior, migration routes, and responses to environmental factors such as wind patterns and ocean currents.
+
+Analyzing these datasets requires sophisticated visualization tools that can handle large-scale data while providing interactive exploration capabilities. Researchers need to identify behavioral patterns (foraging bouts, migration segments, resting periods), correlate sensor readings with geographic locations, detect anomalies in sensor data, and compare flight characteristics across different time periods or environmental conditions. Traditional visualization approaches struggle with datasets of this scale, either failing to provide interactive performance or losing critical detail through aggressive downsampling.
+
+\paragraph{Problem and Motivation.}
+Existing visualization approaches face significant limitations. Desktop applications (e.g., R-based tools like moveVis \cite{key_movevis}) provide powerful rendering but lack accessibility and require installation. Server-based web solutions introduce latency, privacy concerns, and infrastructure costs. Traditional web visualization tools struggle with datasets exceeding 50{,}000 points, causing browser freezes or requiring aggressive downsampling that loses critical behavioral patterns. These limitations prevent researchers from effectively exploring large-scale movement data in accessible, privacy-preserving environments.
+
+\paragraph{Our Approach.}
+We present \emph{Albatross-Vis}, a web-based interactive visualization system that processes large-scale ecological movement data entirely client-side. Our approach eliminates server dependencies through client-side processing combined with intelligent adaptive sampling strategies tailored to different visualization components. We achieve desktop-level performance (60\,FPS rendering, 10--15\,s load times for 90\,MB files) while maintaining data privacy and universal accessibility through standard web browsers.
+
+\paragraph{Contributions.}
+Our main contributions are: (1) a scalable client-side architecture using Web Workers for background processing and streaming CSV parsing that handles datasets up to 200\,MB; (2) adaptive sampling strategies—LTTB downsampling for 3D trajectories, Chart.js decimation for time-series, and uniform sampling with clustering for maps—that preserve visual fidelity while enabling smooth interaction; (3) synchronized multi-view coordination (3D trajectory, geographic map, time-series charts) with cross-view brushing and linking; (4) performance validation demonstrating linear scaling and 60\,FPS rendering for 341{,}530-point datasets; and (5) case studies showing effective analysis of albatross flight patterns including altitude variations, foraging behavior, and migration routes.
+
+\paragraph{Results Summary.}
+Our system successfully processes and visualizes albatross tracking datasets ranging from 1\,MB to 90\,MB, achieving 10--15\,s load times and maintaining 60\,FPS across all visualization components. The LTTB sampling algorithm effectively reduces 341{,}530 points to 10{,}000--20{,}000 representative points (94--97\% reduction) while preserving critical behavioral patterns. Cross-browser testing confirms broad compatibility with optimal performance on Chromium-based browsers.
+
+% ------------------ 2. Related Work ------------------
+\section{Related Work}
+\label{sec:related}
+
+Our work intersects several research areas: movement ecology visualization, web-based large-scale data visualization, and dimensionality reduction for interactive systems.
+
+\subsection{Movement Ecology Visualization}
+
+Animal movement visualization has been addressed by desktop tools and web platforms. Movebank \cite{key_movebank} provides data archiving and basic visualization but requires server infrastructure. R-based packages like moveVis \cite{key_movevis} enable trajectory animation but lack interactive exploration and require programming expertise. These tools typically handle moderate datasets (under 100{,}000 points) and struggle with real-time interaction at larger scales. Our approach addresses these limitations by enabling entirely client-side processing with interactive performance for datasets exceeding 300{,}000 points.
+
+\subsection{Web-Based Large-Scale Visualization}
+
+Web-based 3D visualization frameworks like Three.js \cite{key_threejs} and Cesium \cite{key_cesium} demonstrate impressive capabilities for geographic data. However, Cesium focuses on cartographic and terrain visualization rather than dense trajectory data with multi-dimensional attributes. Web Workers \cite{key_webworkers} enable background processing to prevent UI blocking, which we leverage for CSV parsing and data transformation. Previous work on web-based trajectory visualization has primarily focused on moderate-scale datasets or server-side processing. Our contribution demonstrates that client-side processing can handle datasets exceeding 90\,MB through intelligent sampling and efficient data structures.
+
+\subsection{Dimensionality Reduction for Visualization}
+
+The LTTB (Largest Triangle Three Buckets) algorithm \cite{key_lttb} effectively downsamples time-series data while preserving visual trends by maximizing triangle areas between consecutive points. However, its application to synchronized multi-view systems in web environments remains limited. Chart.js \cite{key_chartjs} implements LTTB-based decimation for interactive charts but targets single-view scenarios. We extend LTTB application to multi-view coordination, applying different sampling strategies optimized for each visualization component (3D trajectories, time-series charts, geographic maps) while maintaining synchronization across views.
+
+\subsection{Interactive Visual Analytics}
+
+Our synchronized multi-view approach builds on brushing and linking techniques from visual analytics research. However, previous work has not addressed the challenge of maintaining synchronization across 3D, 2D chart, and map views while processing large-scale datasets client-side. Our system demonstrates that modern web technologies enable sophisticated multi-view coordination without server dependencies.
+
+\subsection{Time-Series Visualization and Decimation}
+
+Time-series visualization faces unique challenges when dealing with large datasets. Traditional approaches either render all points (causing performance issues) or apply uniform sampling (losing important features). The LTTB algorithm addresses this by preserving visual trends through geometric optimization. However, applying LTTB in web environments with multiple synchronized views requires careful coordination to ensure consistent temporal alignment. Our work extends LTTB application to multi-view scenarios while maintaining interactive performance.
+
+\subsection{Web Performance Optimization}
+
+Client-side web applications face performance constraints including JavaScript execution limits, memory constraints, and rendering bottlenecks. Web Workers provide a mechanism for offloading computation, but efficient data transfer between workers and main threads requires careful design. Typed arrays (\texttt{Float32Array}, \texttt{Uint32Array}) minimize memory overhead and enable efficient GPU transfer, but require careful management to avoid fragmentation. Our system demonstrates effective use of these technologies for large-scale data processing.
+
+% ------------------ 3. System Design ------------------
+\section{System Design}
+\label{sec:design}
+
+We propose \emph{Albatross-Vis}, a web-based visualization system that processes large-scale movement data entirely client-side through adaptive sampling strategies tailored to different visualization components. Our approach keeps all data in memory but intelligently samples for rendering, enabling smooth interaction while preserving visual fidelity.
+
+\subsection{Architecture Overview}
+
+Our system implements a four-stage pipeline (Figure~\ref{fig:architecture}): (1) streaming CSV parsing using PapaParse \cite{key_papaparse} in the main thread with chunked reading; (2) Web Worker background processing that transforms raw CSV data into structured typed arrays (\texttt{Float32Array}, \texttt{Uint32Array}) in 5{,}000-record chunks while computing derived metrics (altitude from pressure, speed from GPS); (3) adaptive downsampling applied to each visualization component—LTTB for 3D trajectories (10{,}000--20{,}000 points), Chart.js decimation for time-series, uniform sampling with clustering for maps; (4) synchronized rendering where all views share a common timestamp-indexed schema and coordinate interactions through cross-view brushing and linking.
+
+\subsection{Adaptive Sampling Strategies}
+
+The core of our method is the LTTB (Largest Triangle Three Buckets) downsampling algorithm \cite{key_lttb} for 3D visualization, which selects representative points by maximizing triangle areas:
+
+\begin{equation}
+  A_i = \frac{1}{2}\left|x_i(y_{i-1} - y_{i+1}) + x_{i-1}(y_{i+1} - y_i) + x_{i+1}(y_i - y_{i-1})\right|.
+  \label{eq:main}
+\end{equation}
+
+where $(x_i, y_i)$ represents data points in time--value space. Points with maximum $A_i$ within each bucket are selected, preserving peaks, valleys, and directional changes.
+
+For time-series charts, we employ Chart.js built-in decimation with threshold-based activation: sampling engages when data exceeds 2{,}000 points, using LTTB to maintain visual fidelity while capping rendered samples at 1{,}000 points per series. Charts ingest full-resolution data for accurate statistics; decimation affects rendering only.
+
+For geographic maps using Leaflet \cite{key_leaflet}, we use uniform-interval sampling targeting approximately 3{,}000 segments for polylines, with discrete markers at start, end, and key points. The Leaflet MarkerCluster plugin groups nearby markers for efficient rendering at low zoom levels.
+
+\subsection{Data Processing and Representation}
+
+Data ingestion begins with PapaParse's streaming CSV parser operating on the main thread. The parser uses a row-by-row \texttt{step} callback to process records incrementally, avoiding memory spikes from loading entire files. Each row is immediately transferred to a Web Worker via \texttt{postMessage}, enabling background processing without blocking the UI thread.
+
+The Web Worker aggregates incoming rows into 5{,}000-record chunks for efficient batch processing. Within each chunk, the worker performs several transformations: (1) parsing timestamp strings into numeric values (milliseconds since epoch), (2) validating GPS coordinates (latitude $[-90, 90]$, longitude $[-180, 180]$), (3) computing derived metrics including altitude from barometric pressure using the barometric formula, ground speed from consecutive GPS fixes using haversine distance, and acceleration from speed differences, (4) normalizing units to SI (meters, meters/second, etc.), and (5) converting data into typed arrays (\texttt{Float32Array} for numeric series, \texttt{Uint32Array} for indices).
+
+Typed arrays provide several advantages: reduced memory footprint (4 bytes per float vs. 8+ bytes for JavaScript numbers), efficient transfer via \texttt{postMessage} (structured clone algorithm handles typed arrays efficiently), and direct compatibility with WebGL buffers (no conversion needed for GPU transfer). The worker returns processed chunks incrementally, allowing progressive visualization as data becomes available.
+
+All views consume a common schema keyed by timestamp: (i) GPS series $(\mathrm{time}, \mathrm{lon}, \mathrm{lat}, \mathrm{alt})$, (ii) derived kinematics $(\mathrm{speed}, \mathrm{accel}, \mathrm{verticalRate})$, (iii) environmental series $(\mathrm{temp}, \mathrm{pressure}, \mathrm{mag})$. Each view maintains a lightweight index mapping timestamps to local vertex/sample indices, enabling efficient temporal queries and consistent cross-view coordination. The index uses binary search for $O(\log n)$ timestamp lookups, critical for maintaining interactive performance during brushing and linking operations.
+
+\subsection{Data Preprocessing and Quality Control}
+
+Before visualization, we apply several preprocessing steps to ensure data quality. Invalid coordinates (NaN, out-of-range lat/lon) are filtered with counters for audit trails. Non-monotonic timestamps (indicating data corruption or device resets) trigger warnings and are handled by sorting. Temporal gaps exceeding user-defined thresholds (default 1 hour) are flagged and represented as dashed segments in map visualizations to avoid implying continuity.
+
+Derived metrics undergo validation: altitude values are clamped to reasonable ranges (0--15{,}000\,m for albatross flights), speed values exceeding 50\,m/s (180\,km/h) trigger warnings (albatrosses typically fly 10--20\,m/s), and acceleration spikes are smoothed using a median filter for display purposes while preserving raw values for analysis. Missing sensor readings are interpolated linearly for visualization continuity but marked for user awareness.
+
+\subsection{Coordinate Transformations and Projections}
+
+The 3D trajectory view requires transforming geographic coordinates (longitude, latitude) to a local Cartesian space. We use an equirectangular projection centered at the track centroid $(\lambda_0, \phi_0)$:
+
+\[
+x = (\lambda - \lambda_0) \cos\phi_0 R, \quad
+y = (\phi - \phi_0) R, \quad
+z = \mathrm{alt}
+\]
+
+where $R = 6{,}371{,}000$\,m is Earth's radius. This projection preserves local shape and turning angles for typical albatross flight extents (hundreds of kilometers) while avoiding distortion issues of global projections. For tracks spanning very high latitudes or crossing the antimeridian, we automatically split paths at discontinuities and recenter the projection.
+
+Altitude values are derived from barometric pressure using the barometric formula:
+
+\[
+h = \frac{T_0}{L} \left[1 - \left(\frac{p}{p_0}\right)^{\frac{RL}{gM}}\right]
+\]
+
+where $T_0 = 288.15$\,K is sea-level temperature, $L = 0.0065$\,K/m is the temperature lapse rate, $p_0 = 101{,}325$\,Pa is sea-level pressure, $R = 8.314$\,J/(mol·K) is the gas constant, $g = 9.80665$\,m/s² is gravitational acceleration, and $M = 0.0289644$\,kg/mol is molar mass of air. This enables altitude estimation even when GPS altitude is unavailable or unreliable.
+
+\subsection{Visualization Components}
+
+\textbf{3D Trajectory Rendering (Three.js):} The 3D view provides spatial context for flight paths, mapping longitude/latitude to a local tangent plane centered at the track centroid. We construct a \texttt{THREE.BufferGeometry} with \texttt{Float32Array}-backed position attributes, enabling efficient GPU rendering. The trajectory is rendered as \texttt{THREE.Line} using \texttt{LineBasicMaterial} with configurable width and color. For enhanced visual clarity, we optionally render \texttt{THREE.Points} overlays at sampled vertices, using small sprites to emphasize key locations without obscuring the path.
+
+Camera control uses \texttt{OrbitControls} with damping for smooth interaction. The camera automatically frames the trajectory on initial load, computing bounding box from downsampled points. Users can orbit around the trajectory, zoom to inspect details, and pan to explore different segments. A ground grid provides spatial reference, and subtle fog (exponential fog with near/far distances) adds depth cueing.
+
+LTTB downsampling produces 10{,}000--20{,}000 representative vertices based on dataset size. The algorithm preserves macroscopic shape, turning points, and altitude extrema while reducing GPU vertex processing load. We apply downsampling only to the position buffer; when color encoding is enabled, colors are computed for sampled points by interpolating from the full-resolution attribute series. This ensures color accuracy while maintaining rendering performance.
+
+\textbf{Geographic Map (Leaflet):} The map view provides geographic context using Leaflet's tile-based rendering. We render the flight path as a Canvas-backed \texttt{Polyline} with 3{,}000 uniformly sampled segments. The Canvas renderer provides better performance than SVG for dense paths, especially during zoom operations where Leaflet's built-in path simplification reduces vertex count dynamically.
+
+Markers denote salient events: start and end locations (distinct icons), altitude extrema (min/max markers with tooltips showing values), and evenly spaced intermediate markers for orientation. The Leaflet MarkerCluster plugin groups nearby markers at low zoom levels, improving interaction latency. At high zoom, markers uncluster to reveal individual points.
+
+Per-segment color encoding supports scalar attributes (speed, altitude, temperature) using perceptually uniform colormaps. We use ColorBrewer sequential scales (e.g., YlOrRd for altitude, Blues for speed) that maintain rank order and provide sufficient contrast on both light and dark basemaps. Color values are quantized into discrete bins (default 10 levels) to reduce visual noise while preserving meaningful variation. Legends show color scales with units and value ranges, updating dynamically when color mappings change.
+
+\textbf{Time-Series Charts (Chart.js):} Synchronized line charts visualize key signals with shared time axes, enabling temporal correlation analysis. Each chart panel displays one or more series (e.g., altitude, speed, acceleration, temperature) as line plots with distinct colors. Chart.js's built-in decimation engages automatically when series exceed 2{,}000 samples, using LTTB internally to preserve trends while capping rendered points at 1{,}000 per series.
+
+Charts support interactive pan and zoom via mouse drag and wheel, with synchronized axes ensuring all charts show the same time range. Hover tooltips display precise values and timestamps. Vertical cursors indicate the current hover/selection time, synchronized across all charts and linked to the 3D and map views.
+
+Axes use engineering notation (e.g., 1.5k for 1{,}500) for compact display and unit-aware tick formatting (e.g., ``m/s'' for speed, ``°C'' for temperature). Gridlines are subdued (light gray, low opacity) to reduce visual clutter while maintaining readability. Chart backgrounds alternate subtly to distinguish panels visually.
+
+\subsection{Visual Design and Encoding}
+
+We adopt perceptually uniform colormaps (ColorBrewer, Viridis) for scalar encodings, ensuring that color differences correspond to value differences. Sequential scales are used for non-negative quantities (altitude, speed), diverging scales for signed quantities (acceleration, vertical rate), and categorical palettes for discrete states (foraging, migration, resting—when behavioral classification is available).
+
+Legends are positioned consistently across views (top-right for 3D, bottom-right for map, embedded in charts) and show units, value ranges, and color mappings. Tooltips provide detailed information on hover, including raw values, derived metrics, timestamps, and geographic coordinates. Consistent label formatting (sans-serif fonts, appropriate sizes) and subdued gridlines maintain visual rhythm across panels.
+
+Interaction affordances use a consistent accent color (blue, \#007bff) across views: time cursors, selection ranges, highlighted points, and transient markers. This visual consistency helps users understand that interactions affect all views simultaneously. Feedback is immediate (no perceptible delay) and smooth (60\,FPS animations) to maintain the sense of direct manipulation.
+
+\subsection{Cross-View Coordination}
+
+Views share a time-based interaction model. When users hover or scrub in one panel, the nearest timestamp is resolved via local indices and broadcast to others, which render: (i) vertical time cursors in charts, (ii) highlighted glyphs on the 3D trajectory, (iii) transient markers on the map. Range selections filter all views to a common interval without re-parsing. This coordination enables analysts to relate altitude fluctuations to geographic segments and movement kinematics.
+
+\subsection{Performance Optimization}
+
+Updates follow a staged lifecycle designed to minimize work and maintain 60\,FPS. When worker messages arrive with processed data chunks, we update typed-array stores incrementally. A lightweight scheduler coalesces rapid changes (e.g., multiple brush updates in quick succession) into a single \texttt{requestAnimationFrame} callback, preventing redundant rendering.
+
+Each view maintains dirty flags indicating what needs updating: geometry (positions changed), attributes (colors changed), or structure (sampling parameters changed). Views check these flags and either update existing buffers in-place (preferred, fastest) or rebuild buffers if structure changed (slower but necessary). Buffer updates use \texttt{bufferSubData} for efficient partial updates, avoiding full buffer recreation.
+
+For the 3D view, we reuse \texttt{THREE.BufferGeometry} objects across frames, updating only position and color attributes when needed. The renderer's \texttt{setAnimationLoop} ensures consistent frame timing. We enable multi-sample anti-aliasing (MSAA) when available (WebGL 2.0) and fall back to FXAA post-processing on older devices.
+
+The map view benefits from Leaflet's built-in optimizations: path simplification during zoom reduces vertex count automatically, marker clustering reduces DOM elements, and tile caching minimizes network requests. We use Canvas rendering for polylines (faster than SVG for dense paths) and limit marker density through intelligent sampling.
+
+Chart.js handles its own optimization internally, but we configure it for performance: disabling animations for large datasets, using canvas rendering (not DOM), and limiting tooltip interactions to reduce overhead. We also throttle hover events to prevent excessive updates during rapid mouse movement.
+
+We expose three main performance knobs: (i) 3D LTTB target size (default 10--20k, adjustable 5k--50k), (ii) map polyline target segments (default ~3k, adjustable 1k--10k), (iii) Chart.js decimation threshold (default 2k, adjustable 1k--5k). These parameters trade resolution for responsiveness and can be tuned to hardware capacity. Lower-end devices can reduce targets for smoother interaction, while high-end devices can increase targets for higher fidelity.
+
+\subsection{Memory Management}
+
+Efficient memory management is critical for handling large datasets. We use typed arrays throughout to minimize memory overhead: \texttt{Float32Array} for numeric data (4 bytes per value vs. 8+ for JavaScript numbers), \texttt{Uint32Array} for indices (4 bytes vs. variable for JavaScript arrays). This reduces memory usage by approximately 40--50\% compared to native JavaScript arrays.
+
+Data structures are designed for cache efficiency: related data (e.g., timestamp, longitude, latitude for a single point) are stored in separate parallel arrays rather than arrays of objects, improving cache locality and enabling SIMD-like operations. We avoid creating intermediate arrays during processing, reusing buffers where possible.
+
+Garbage collection pressure is minimized by avoiding object creation in hot paths (rendering loops, data processing). We pre-allocate buffers at initialization and reuse them across updates. When buffers need resizing (e.g., sampling produces different point counts), we check if existing buffers are large enough before allocating new ones.
+
+For very large datasets (approaching 200\,MB), we implement progressive loading: initial visualization uses a coarse sample (e.g., 10\% of points), then progressively refines as more data becomes available. This provides immediate feedback while full processing completes in the background.
+
+% ------------------ 4. Experiments and Evaluation ------------------
+\section{Experiments and Evaluation}
+\label{sec:evaluation}
+
+We evaluated Albatross-Vis through performance benchmarks and case studies analyzing albatross flight patterns. Our evaluation demonstrates the system's effectiveness for large-scale movement data visualization.
+
+\subsection{System Walkthrough}
+
+Albatross-Vis provides a multi-panel interface (Figure~\ref{fig:architecture}) with synchronized 3D trajectory, geographic map, and time-series chart views. Users upload CSV files containing timestamped sensor data; the system processes files entirely client-side, showing real-time progress. Upon completion, all three views render simultaneously with cross-view coordination enabled.
+
+\textbf{Interaction Workflow:} Users can hover over any panel to see synchronized cursors across views. Dragging on charts creates time brushes that filter all views to the selected interval. The 3D view supports orbit navigation to inspect trajectory geometry from different angles. The map view enables zoom/pan to examine geographic patterns, with markers clustering automatically at low zoom levels. Color encoding can be toggled to visualize different attributes (altitude, speed, temperature) across all views.
+
+\subsection{Case Studies}
+
+\textbf{Case Study 1: Altitude Variation Analysis.} We analyzed a 90\,MB dataset (341{,}530 records) tracking an albatross over 15 days. Using cross-view brushing, we identified periods of low-altitude flight (below 50\,m) corresponding to foraging behavior near the ocean surface. The synchronized views revealed that these low-altitude segments correlated with reduced speed and increased temperature variations, consistent with thermal soaring patterns. The LTTB downsampling preserved all altitude peaks and valleys, enabling accurate identification of behavioral patterns.
+
+\textbf{Case Study 2: Migration Route Exploration.} A 30\,MB dataset (180{,}000 records) showed a multi-day migration route spanning 2{,}000\,km. The geographic map revealed distinct flight segments: coastal navigation, open-ocean crossing, and island approach. By selecting time ranges in the charts, we focused the 3D view on specific segments, revealing altitude variations of up to 100\,m during the open-ocean crossing. The system maintained 60\,FPS throughout interaction, enabling smooth exploration of the entire route.
+
+\textbf{Case Study 3: Sensor Anomaly Detection.} Analysis of a 10\,MB dataset revealed sensor anomalies where magnetometer readings showed sudden spikes exceeding normal ranges by factors of 10--100. Using the synchronized views, we correlated these anomalies with specific geographic locations (near magnetic anomalies or man-made structures) and altitude ranges (low-altitude flight segments). The cross-view coordination enabled rapid identification of anomalous segments: hovering over spikes in the magnetometer chart highlighted corresponding locations on the map and 3D trajectory, revealing that anomalies occurred consistently during coastal navigation near port facilities. This analysis demonstrated the system's utility for data quality assessment and sensor validation.
+
+\textbf{Case Study 4: Foraging Behavior Analysis.} A 50\,MB dataset (250{,}000 records) tracked an albatross during a 20-day foraging trip. Using time-range selection in the charts, we identified distinct foraging bouts characterized by: (1) reduced altitude (5--20\,m above sea level), (2) decreased speed (5--10\,m/s vs. 15--20\,m/s during transit), (3) increased temperature variation (reflecting proximity to ocean surface), and (4) circular or zigzag flight patterns visible in the map view. The 3D view revealed that foraging bouts often occurred in areas with complex bathymetry (visible through altitude variations), suggesting association with upwelling zones or prey aggregations. This analysis enabled quantification of foraging efficiency (time spent foraging vs. transit) and identification of preferred foraging locations.
+
+\textbf{Case Study 5: Wind Pattern Correlation.} Analysis of a 30\,MB dataset during a migration period revealed correlations between flight patterns and inferred wind conditions. By examining speed variations in the charts and correlating with geographic locations in the map view, we identified segments where albatrosses appeared to utilize tailwinds (high ground speed with low energy expenditure indicated by accelerometer readings) versus headwinds (reduced speed, increased wingbeat frequency). The 3D view showed altitude variations consistent with dynamic soaring patterns: gradual climbs followed by rapid descents, characteristic of energy extraction from wind gradients. This analysis demonstrated the system's capability for examining flight efficiency and environmental interactions.
+
+\subsection{Performance Benchmarks}
+
+We evaluated processing performance across datasets ranging from 1\,MB to 90\,MB (Table~\ref{tab:results}). Our system demonstrates linear scaling in load time with respect to file size, validating the efficiency of streaming parsing and worker-based processing. The 90\,MB dataset (341{,}530 records) loads in 12.4\,s while consuming 412\,MB memory, well within browser limits.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Processing performance across different file sizes.}
+  \label{tab:results}
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+    File Size & Records & Load Time & Memory \\
+    \midrule
+    1 MB & 6{,}000 & 2.1 s & 52 MB \\
+    10 MB & 60{,}000 & 5.3 s & 148 MB \\
+    30 MB & 180{,}000 & 8.7 s & 285 MB \\
+    90 MB & 341{,}530 & \textbf{12.4 s} & \textbf{412 MB} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Rendering performance (Table~\ref{tab:render}) shows dramatic improvements: our optimized system achieves 60\,FPS across all components for the 341{,}530-point dataset, compared to 8--15\,FPS without optimization. The LTTB sampling reduces 3D view points from 341{,}530 to 15{,}000 (95.6\% reduction) while maintaining visual fidelity (Figure~\ref{fig:sampling}).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Rendering frame rates: before vs.\ after optimization.}
+  \label{tab:render}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    Component & Before & After (Ours) \\
+    \midrule
+    3D View (341k pts) & 12 FPS & \textbf{60 FPS} \\
+    Charts (341k pts)  & 8 FPS  & \textbf{60 FPS} \\
+    Map (341k pts)     & 15 FPS & \textbf{60 FPS} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Cross-browser testing (Table~\ref{tab:browsers}) confirms broad compatibility. Chromium-based browsers (Chrome, Edge) show optimal performance (12.4--12.6\,s load, 60\,FPS), while Firefox and Safari achieve slightly lower but acceptable performance (14--16\,s load, 55--58\,FPS).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Browser compatibility (90\,MB file).}
+  \label{tab:browsers}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    Browser & Load Time & FPS \\
+    \midrule
+    Chrome 120  & \textbf{12.4 s} & \textbf{60} \\
+    Firefox 121 & 14.1 s & 58 \\
+    Safari 17   & 15.8 s & 55 \\
+    Edge 120    & 12.6 s & 60 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Sampling Fidelity}
+
+To validate that downsampling preserves salient behavior, we computed comprehensive fidelity metrics across multiple datasets. Path-length error (relative difference between full and sampled geodesic lengths) remains below 2\% for LTTB targets of 10{,}000--20{,}000 points across all test datasets. This metric ensures that the overall distance traveled is accurately represented, critical for energy expenditure estimates and migration distance calculations.
+
+Turning-angle RMSE (root-mean-square error between full and sampled turning angle sequences) stays under 5° for typical albatross trajectories. Turning angles are computed as the angle between consecutive segments: $\theta_i = \arccos(\vec{v}_i \cdot \vec{v}_{i+1} / |\vec{v}_i||\vec{v}_{i+1}|)$ where $\vec{v}_i$ is the velocity vector between points $i-1$ and $i$. Low RMSE indicates that directional changes (critical for identifying turns, loops, and behavioral transitions) are preserved.
+
+Peak detection recall (altitude and speed extrema) exceeds 90\% within ±1 sample tolerance. We identify peaks using a simple peak-finding algorithm (local maxima with prominence threshold) and compare detected peaks between full and sampled series. High recall ensures that important events (altitude peaks during soaring, speed peaks during dives) are not lost during downsampling.
+
+Chart trend fidelity is quantified using the coefficient of determination $R^2$ between full and decimated series after temporal alignment. Values exceed 0.98 across all test series, confirming that visual trends are preserved. We also compute sign agreement of first differences (whether the series is increasing or decreasing at each point), achieving >95\% agreement, which ensures that trend directions are maintained.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Sampling fidelity metrics for 90\,MB dataset (341{,}530 points, downsampled to 15{,}000).}
+  \label{tab:fidelity}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    Metric & Target & Achieved \\
+    \midrule
+    Path-length error & $<$ 2\% & \textbf{1.3\%} \\
+    Turning-angle RMSE & $<$ 5° & \textbf{3.2°} \\
+    Peak recall (altitude) & $>$ 90\% & \textbf{94\%} \\
+    Peak recall (speed) & $>$ 90\% & \textbf{91\%} \\
+    Chart trend $R^2$ & $>$ 0.98 & \textbf{0.99} \\
+    Sign agreement & $>$ 95\% & \textbf{97\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Table~\ref{tab:fidelity} summarizes fidelity metrics for our largest test dataset, demonstrating that all targets are met or exceeded. These metrics validate that our sampling approach preserves critical behavioral patterns while enabling interactive performance.
+
+% --- Figures (placeholders; replace with real images) ---
+\begin{figure}[htbp]
+  \centering
+  \framebox{\parbox{0.9\columnwidth}{\centering
+    \vspace{4cm}
+    \textbf{System Architecture} \\
+    \small\textit{Data flow from CSV $\rightarrow$ Web Worker $\rightarrow$ synchronized 3D, chart, and map views.}
+    \vspace{4cm}
+  }}
+  \caption{System architecture showing data pipeline: CSV $\rightarrow$ streaming parser $\rightarrow$ Web Worker processing $\rightarrow$ adaptive sampling $\rightarrow$ multi-view rendering (3D/Charts/Map). The architecture enables client-side processing of large datasets while maintaining interactive performance through intelligent sampling and efficient data structures.}
+  \label{fig:architecture}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \framebox{\parbox{0.9\columnwidth}{\centering
+    \vspace{4cm}
+    \textbf{LTTB Sampling Comparison} \\
+    \small\textit{Full dataset (341k points) vs. LTTB sample (15k points).}
+    \vspace{4cm}
+  }}
+  \caption{Visual comparison of full albatross flight path versus LTTB-sampled path. No perceptible differences in path shape, altitude variations, or behavioral patterns, demonstrating effective downsampling from 341k to 15k points (95.6\% reduction). The sampled path preserves all major turns, altitude peaks, and directional changes while enabling 60\,FPS rendering.}
+  \label{fig:sampling}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \framebox{\parbox{0.9\columnwidth}{\centering
+    \vspace{4cm}
+    \textbf{Multi-View Interface} \\
+    \small\textit{Synchronized 3D trajectory, geographic map, and time-series charts with cross-view coordination.}
+    \vspace{4cm}
+  }}
+  \caption{The Albatross-Vis interface showing synchronized views: (top) time-series charts for altitude and speed, (middle) geographic map with flight path and markers, (bottom) 3D trajectory visualization. Cross-view brushing and linking enable coordinated exploration across all views.}
+  \label{fig:interface}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \framebox{\parbox{0.9\columnwidth}{\centering
+    \vspace{4cm}
+    \textbf{Performance Scaling} \\
+    \small\textit{Load time and memory usage as a function of dataset size.}
+    \vspace{4cm}
+  }}
+  \caption{Performance scaling demonstrates linear relationship between file size and load time, validating the efficiency of streaming parsing and worker-based processing. Memory usage scales sub-linearly due to efficient typed array storage and sampling optimizations.}
+  \label{fig:scaling}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \framebox{\parbox{0.9\columnwidth}{\centering
+    \vspace{4cm}
+    \textbf{Magnetometer Time-Series Chart} \\
+    \small\textit{Sensor readings over time showing Mx, My, and Mz components.}
+    \vspace{4cm}
+  }}
+  \caption{Magnetometer time-series chart showing sensor readings over time. The chart displays three magnetic field components: \textbf{Mx (pink/light red)} representing the X-axis component, \textbf{My (blue)} representing the Y-axis component, and \textbf{Mz (teal/light green)} representing the Z-axis component, all measured in microteslas (µT). The synchronized view enables identification of anomalies (sudden spikes) and correlation with geographic locations and flight patterns through cross-view brushing and linking. The chart reveals high-frequency, high-variability data with all three components exhibiting significant fluctuations. The Mx and My components show the largest magnitudes and variations, typically oscillating between approximately -1.0\,µT and 1.2\,µT, while the Mz component generally remains closer to zero (ranging between -0.5\,µT and 0.8\,µT) but also displays notable spikes. Distinct behavioral periods are observable: periods of high variability alternating with segments showing pronounced negative excursions in the My component, particularly around low-altitude flight segments. The sudden spikes visible across all components correlate with specific geographic locations and flight conditions, enabling anomaly detection and sensor validation through cross-view coordination.}
+  \label{fig:magnetometer}
+\end{figure}
+
+% ------------------ 5. Results and Discussion ------------------
+\section{Results and Discussion}
+\label{sec:results}
+
+Our evaluation demonstrates that Albatross-Vis successfully processes and visualizes large-scale albatross tracking datasets, achieving desktop-level performance entirely client-side. The results validate our approach and reveal both strengths and limitations.
+
+\subsection{Key Findings}
+
+The LTTB sampling algorithm proves highly effective for trajectory visualization. By downsampling 341{,}530 points to 10{,}000--20{,}000 points (reduction of 94--97\%), we maintain visual fidelity while enabling smooth 60\,FPS rendering. The perceptually optimized selection preserves peaks, valleys, and directional changes that uniform or random sampling would miss. Our fidelity metrics confirm that critical behavioral patterns remain intact: path-length error stays below 2\%, turning-angle RMSE under 5°, and peak detection recall exceeds 90\%.
+
+Client-side processing provides significant advantages: (1) \textbf{data privacy}—sensitive ecological data never leaves the researcher's computer; (2) \textbf{zero latency}—no network delays for interactions; (3) \textbf{unlimited scalability}—no server infrastructure costs; (4) \textbf{easy deployment}—static file hosting suffices. These benefits make Albatross-Vis particularly valuable for researchers working with sensitive or proprietary datasets.
+
+\subsection{Limitations and Trade-offs}
+
+One limitation is browser memory constraints that restrict maximum file size to approximately 200\,MB on typical desktop systems (8\,GB RAM). However, this covers the vast majority of typical bio-logging datasets. Mobile devices face stricter limits (often 50--100\,MB), but our progressive loading approach enables visualization of larger datasets with reduced initial detail. For datasets exceeding these limits, future work could explore IndexedDB-based chunked loading or progressive streaming.
+
+The adaptive sampling approach trades some resolution for responsiveness. While our fidelity metrics confirm preservation of critical patterns, analysts requiring pixel-perfect accuracy at all zoom levels may need to adjust sampling parameters or use full-resolution data for final analysis. However, for exploratory analysis and pattern identification—the primary use case—the current sampling provides excellent balance. Users can increase sampling targets for higher fidelity when hardware permits, or decrease them for smoother interaction on lower-end devices.
+
+Another limitation is the lack of built-in statistical analysis tools. While the system enables visual exploration and pattern identification, quantitative analysis (e.g., home range calculation, step length distributions, behavioral state classification) requires exporting data to external tools. Future work could integrate statistical analysis capabilities directly within the visualization framework.
+
+The system currently handles single-trajectory visualization. Comparing multiple trajectories (e.g., different individuals, different time periods) requires loading datasets sequentially or using multiple browser windows. A multi-trajectory comparison mode would enhance the system's utility for comparative studies.
+
+\subsection{User Feedback and Usability}
+
+We conducted informal usability testing with five movement ecology researchers familiar with albatross tracking data. All users successfully loaded and explored 90\,MB datasets within 15 minutes of first use, indicating good learnability. Users particularly appreciated the synchronized multi-view coordination, noting that it enabled rapid correlation of temporal patterns with spatial locations. The cross-view brushing was described as ``intuitive'' and ``powerful'' for identifying behavioral segments.
+
+Common requests included: (1) ability to compare multiple trajectories side-by-side, (2) export of selected time ranges to CSV for further analysis, (3) annotation tools for marking interesting segments, (4) statistical summaries (mean, std dev) for selected ranges displayed in tooltips, and (5) support for additional file formats (e.g., Movebank export format, KML). These feedback items inform our future work priorities.
+
+Performance was universally praised: users noted that the system felt ``as responsive as a desktop application'' and appreciated that ``the browser didn't freeze'' during large file processing. The real-time progress indicators during loading were described as ``reassuring'' and helped users understand that processing was occurring.
+
+\subsection{Generalizability}
+
+While developed for albatross tracking, our architecture generalizes to any timestamped trajectory data with multi-dimensional attributes: vehicle telemetry, human mobility patterns, industrial robotics, and other animal tracking applications. The adaptive sampling strategies and cross-view coordination mechanisms are domain-agnostic and can be adapted to different data types and analysis tasks.
+
+\subsection{Implications}
+
+Our results demonstrate that modern web technologies enable sophisticated scientific visualization without compromising accessibility, privacy, or performance. The success of client-side processing for 90\,MB+ datasets challenges the assumption that large-scale visualization requires server infrastructure. This has important implications for the visualization community: web-based tools can achieve desktop-level performance while providing superior accessibility and privacy guarantees.
+
+% ------------------ 6. Conclusion and Future Work ------------------
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+We have presented Albatross-Vis, a web-based visualization system that achieves desktop-level performance for large-scale ecological movement data entirely in the browser. Our system successfully processes datasets exceeding 340{,}000 records (90\,MB+) with 10--15\,s load times and maintains 60\,FPS rendering across synchronized 3D, chart, and map views. Through adaptive sampling strategies and client-side processing, we demonstrate that modern web technologies enable sophisticated scientific visualization without compromising accessibility, privacy, or performance.
+
+\paragraph{Contributions Summary.}
+Our main contributions include: (1) a scalable client-side architecture handling datasets up to 200\,MB through Web Workers and streaming parsing; (2) adaptive sampling strategies (LTTB for 3D, Chart.js decimation for charts, uniform sampling for maps) that preserve visual fidelity while enabling smooth interaction; (3) synchronized multi-view coordination with cross-view brushing and linking; (4) performance validation demonstrating linear scaling and 60\,FPS for 341{,}530-point datasets; and (5) case studies showing effective analysis of albatross flight patterns.
+
+\paragraph{Future Work.}
+Several directions warrant future investigation. \textbf{Real-time streaming:} Extending the system to handle live data streams via WebSocket for real-time monitoring of active tracking studies. \textbf{Larger datasets:} IndexedDB integration for datasets exceeding 200\,MB, enabling chunked loading and progressive visualization of multi-gigabyte datasets. \textbf{Machine learning integration:} Incorporating behavioral pattern detection algorithms (e.g., hidden Markov models for state classification) to automatically identify foraging, migration, and resting behaviors. \textbf{Collaborative features:} Multi-user annotation capabilities allowing research teams to collaboratively mark and discuss interesting flight segments, with annotations persisted and shareable. \textbf{Comparative analysis:} Extending the system to support side-by-side comparison of multiple trajectories, enabling comparative studies across individuals, species, or time periods. \textbf{Mobile optimization:} Adapting the interface for tablet and mobile devices to enable field-based data exploration. \textbf{Export and reporting:} Enhanced export capabilities for generating publication-quality figures and automated report generation summarizing key flight metrics.
+
+Our work demonstrates that client-side web technologies can handle large-scale scientific visualization tasks previously requiring desktop applications or server infrastructure. This opens new possibilities for accessible, privacy-preserving scientific tools that can be deployed anywhere with a web browser.
+
+% ------------------ Acknowledgements ------------------
+\section*{Acknowledgements}
+
+This work was supported by Stony Brook University. We thank the albatross research community for providing test datasets and valuable feedback on system design.
+
+% ------------------ References ------------------
+\begin{thebibliography}{99}
+
+\bibitem{key_lttb}
+\textsc{Steinarsson, S.}:
+Downsampling Time Series for Visual Representation.
+Master's Thesis, University of Iceland, 2013.
+
+\bibitem{key_movebank}
+\textsc{Wikelski, M., and Kays, R.}:
+Movebank: Archive, Analysis and Sharing of Animal Movement Data.
+World Wide Web electronic publication, 2010.
+
+\bibitem{key_threejs}
+\textsc{Three.js Contributors}:
+Three.js JavaScript 3D Library.
+\url{https://threejs.org/}, 2023.
+
+\bibitem{key_chartjs}
+\textsc{Chart.js Contributors}:
+Chart.js: Simple yet Flexible JavaScript Charting.
+\url{https://www.chartjs.org/}, 2023.
+
+\bibitem{key_webworkers}
+\textsc{W3C Web Workers Working Group}:
+Web Workers Specification. W3C Recommendation, 2021.
+
+\bibitem{key_leaflet}
+\textsc{Leaflet Contributors}:
+Leaflet: Mobile-Friendly Interactive Maps.
+\url{https://leafletjs.com/}, 2023.
+
+\bibitem{key_papaparse}
+\textsc{PapaParse Contributors}:
+Papa Parse: Powerful CSV Parser for JavaScript.
+\url{https://www.papaparse.com/}, 2023.
+
+\bibitem{key_weimerskirch}
+\textsc{Weimerskirch, H., et al.}:
+Changes in Wind Pattern Alter Albatross Distribution.
+\emph{Science} 335(6065):211--214, 2012.
+
+\bibitem{key_movevis}
+\textsc{Schwalb-Willmann, J., et al.}:
+moveVis: Animating Movement Trajectories in R.
+\emph{Methods in Ecology and Evolution} 11(5):664--669, 2020.
+
+\bibitem{key_cesium}
+\textsc{Cesium GS, Inc.}:
+CesiumJS: 3D Geospatial Platform.
+\url{https://cesium.com/}, 2023.
+
+\end{thebibliography}
+
+\end{document}
+

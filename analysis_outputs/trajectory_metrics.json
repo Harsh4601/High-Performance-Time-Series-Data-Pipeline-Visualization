@@ -1,0 +1,17 @@
+{
+  "n_rows_raw": 113843,
+  "n_rows_used": 113842,
+  "start_time": "2020-12-11 22:30:35",
+  "end_time": "2020-12-13 06:07:58",
+  "duration_s": 113843.0,
+  "total_distance_m": 1175914.2443380444,
+  "net_displacement_m": 816899.6289622409,
+  "tortuosity": 1.4394843658233538,
+  "mean_speed_mps": 10.329209740003604,
+  "p95_speed_mps": 23.101198106282602,
+  "max_speed_mps": 26.574965346726735,
+  "mean_vertical_rate_mps": 4.6522806122835586e-06,
+  "max_abs_vertical_rate_mps": 0.765913359150906,
+  "mean_turn_rate_radps": 0.0006738205808909279,
+  "p95_turn_rate_radps": 1.2918252898508342e-06
+}
